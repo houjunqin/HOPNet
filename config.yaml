@@ -1,0 +1,184 @@
+data:
+  input_feature_idx: [0]
+  output_feature_idx: [0]
+  output_feature_names: surface_elevation
+  split_ratio: [0.3, 0.3, 0.4]
+  input_len: 48
+  horizon: 48
+  batch_size: 16
+  num_workers: 0
+  sampling_freq_day: 95
+  num_nodes: 8809
+  input_dim: 1
+  output_dim: 1
+
+HOPNet:
+  log: ./logs/HOPNet/
+
+  d_model: 64
+  state_embed_dim: 8
+  edge_embed_dim: 8
+  static_embed_dim: 8
+  position_embed_dim: 8
+
+  expansion_ratio: 2
+
+  temporal_layers: 2
+  temporal_kernel_size: 3
+
+  spatial_kernel_size: 5
+  eca_kernel_size: 3
+
+  # ======================================================
+  # Forecasting
+  # ======================================================
+
+  use_local_encoder: true
+  use_fine_mpnn: true
+  use_coarse: true
+  coarse_mode: diffusion # diffusion | mpnn | none
+  use_gino: true
+  use_partition_attention: true
+  use_temporal: true
+  temporal_ablation_mode: last # last | mean | max  
+  use_persistence: true
+
+  # Conservative initial contribution from global branches.
+  gino_gate_init: -3.0
+  partition_gate_init: -3.0
+  coarse_gate_init: -2.5
+  coarse_up_gate_init: -2.5
+
+  head_bottleneck_ratio: 0.25
+
+  # ======================================================
+  # Mixed precision and gradient stability
+  # ======================================================
+
+  use_amp: true
+  amp_dtype: bfloat16
+
+  # Keep only one gradient clipping setting.
+  grad_clip: 0.5
+
+  # Remove max_grad_norm from the config unless the trainer
+  # specifically uses that name instead of grad_clip.
+
+  # ======================================================
+  # Generalization
+  # ======================================================
+
+  dropout: 0.20
+  head_dropout: 0.35
+  feature_dropout: 0.10
+  edge_dropout: 0.12
+  drop_path: 0.10
+
+  # Start with lower noise. 0.01 may be large after scaling.
+  input_noise_std: 0.003
+
+  # ======================================================
+  # Direct multi-horizon objective
+  # ======================================================
+
+  state_huber_beta: 0.15
+
+  # Give later horizons moderately more importance.
+  horizon_final_weight: 1.40
+
+  # ======================================================
+  # Physics loss
+  # ======================================================
+  use_physics_loss: false
+  # Use adaptive weighting to balance physics and state losses.
+  adaptive_phys_weight: true
+
+  # Keep objective simple for architecture ablations.
+  lambda_residual: 0.0
+  lambda_forecast_smooth: 0.0
+
+  # Start lower until the physics residual is verified.
+  phys_target_ratio: 0.01
+
+  #lambda_residual: 0.005
+  #lambda_forecast_smooth: 0.001
+  phys_lambda_min: 0.0
+  phys_lambda_max: 2.0
+
+  phys_residual_clip: 3.0
+  phys_huber_beta: 0.5
+
+  loss_warmup_epochs: 5
+  aux_ramp_epochs: 10
+
+  # ======================================================
+  # Optimizer
+  # ======================================================
+
+  learning_rate: 3.0e-6
+  weight_decay: 5.0e-4
+
+  fused_optimizer: true
+
+  # ======================================================
+  # Scheduler
+  # ======================================================
+
+  scheduler_factor: 0.5
+  scheduler_patience: 5
+
+  # Relative threshold 0.002 means a 0.2% improvement.
+  scheduler_threshold: 0.002
+  scheduler_threshold_mode: rel
+
+  scheduler_cooldown: 1
+  min_lr: 1.0e-6
+
+  # ======================================================
+  # Checkpointing and early stopping
+  # ======================================================
+
+  monitor_metric: val_mae
+
+  minimum_epochs: 6
+  patience: 6
+
+  early_stop_delta: 0.0002
+  epochs: 80
+
+  # ======================================================
+  # Memory-safe graph processing
+  # ======================================================
+
+  # Large edge chunks can allocate huge message tensors.
+  fine_edge_chunk_size: 81920
+  coarse_edge_chunk_size: 40960
+
+  # These values refer to the batch/time graph dimension.
+  # Keep them small for large meshes.
+  graph_batch_chunk_size: 300
+  spatial_chunk_size: 300
+
+  use_gradient_checkpointing: true
+
+  # ======================================================
+  # Rollout evaluation
+  # ======================================================
+
+  # Rollout is autoregressive and more expensive than direct
+  # prediction, so evaluate it periodically.
+  rollout_every: 5
+  rollout_batches: 2
+
+  extreme_channel_position: 0
+  extreme_bins:
+  - [-1.0e30, 1.0]
+  - [1.0, 2.0]
+  - [2.0, 3.0]
+  - [3.0, 1.0e30]
+
+  # Large raw-prediction outputs.
+  # Recommended for normal ablations: all false.
+  collect_prediction_outputs: false
+  save_subgraph_predictions: false
+  save_combined_predictions: false
