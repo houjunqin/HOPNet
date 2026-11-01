@@ -7,7 +7,9 @@ The Hierarchical Operator-Partition Network for Multiscale Coastal State Forecas
 <picture>
 <img src="./HOPNet.png" alt="HOPNet" >
 </picture>
-
+<br>
 Test environment: Python 3.12.14, PyTorch 3.14, and CUDA 12.9.
+<br>
 Download the Harvey dataset and unzip:   https://drive.google.com/file/d/1d_acFI0CHsj2hxwFWX4UIweA-2XoOOgL/view?usp=sharing
+<br>
 Run for single GPU: python ddprun.py, parallel: torchrun --nproc_per_node=2 ddprun.py
